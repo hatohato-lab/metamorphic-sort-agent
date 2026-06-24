@@ -35,7 +35,7 @@ python eval/oracle.py --selftest
 
 ## エージェントの動かし方（candidate の作り方）
 
-`agent/metamorphic-sort-agent.md` は **Claude Code 用のエージェント定義（指示書）** です。呼ばれて初めて動きます。
+`.claude/agents/metamorphic-sort-agent.md` は **Claude Code 用のエージェント定義（指示書）** です。呼ばれて初めて動きます。
 
 - ソートを実装させるには、この定義を **`.claude/agents/` に置いて呼ぶ**か、定義の指示に従って**任意の LLM に実装させ**、`eval/corpus/candidate.py` に保存します。
 - `candidate.py` が無くても、クイックスタート (1) の **reference** で全工程を再現できます。
@@ -68,7 +68,7 @@ flowchart TD
 
 ## ファイル構成
 
-- `agent/metamorphic-sort-agent.md` … エージェントの定義。
+- `.claude/agents/metamorphic-sort-agent.md` … エージェントの定義。
 - `eval/oracle.py` … 採点プログラム（性質ベースのオラクル。`--selftest` 内蔵）。
 - `eval/corpus/reference.py` … 正しい実装の見本（陽性対照）。
 - `eval/corpus/broken_*.py` … わざと入れた既知バグ（陰性対照。オラクルがバグを検出できるかの確認用）。
