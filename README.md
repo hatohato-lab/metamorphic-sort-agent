@@ -1,6 +1,11 @@
 # metamorphic-sort-agent
 
+*An AI agent that implements integer sorting from scratch, graded without golden answers by a metamorphic (property-based) oracle.*
+*The oracle proves itself first: it must pass a correct reference and reject three deliberately broken implementations.*
+
 整数の並べ替え（ソート）を**自分のアルゴリズムで実装する**エージェントと、**正解表を持たずに「性質」で正しさを判定する**オラクル（採点プログラム）。
+
+専門用語を使わない説明は [説明書.md](説明書.md) にあります。
 
 ## 概要
 

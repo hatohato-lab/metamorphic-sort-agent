@@ -12,17 +12,22 @@ golden（期待出力）を持たずに、「正しい sort なら必ず満た�
   MR4 冪等         … sort(sort(x))==sort(x)
   MR5 置換不変     … 入力をシャッフルしても sort 結果は不変
 
+加えて、エージェント産の候補には静的検査を行う: 組み込み sorted() / list.sort() の使用を
+ソースから検出したら制約違反として FAIL（オラクル自身の対照ファイルは検査対象外）。
+
 使い方:
   python oracle.py                  # reference.py（正例＝陽性対照）を採点
-  python oracle.py --candidate NAME # NAME.py（エージェントの出力）を採点
+  python oracle.py --candidate NAME # NAME.py（エージェントの出力）を採点（.py 付きでも可）
   python oracle.py --selftest       # オラクル自身を検証（正例→PASS / 既知バグ実装→FAIL）
 
 終了コード: 全 MR PASS（または selftest が期待どおり）で 0、それ以外 1。
 """
 import argparse
 import importlib.util
+import io
 import random
 import sys
+import tokenize
 from collections import Counter
 from pathlib import Path
 
@@ -36,6 +41,35 @@ if hasattr(sys.stdout, "reconfigure"):
 
 EVAL_DIR = Path(__file__).resolve().parent
 CASES = EVAL_DIR / "corpus"
+
+# 静的検査（組み込みソート禁止）の対象外ファイル。
+# reference.py はオラクル自身の陽性対照（物差し）であってエージェントの解答ではないため、
+# 意図的に組み込み sorted() を使っている。broken_*.py も同様にオラクル検証用の対照。
+# 「自力実装」の制約はエージェント産の候補にだけ課されるので、対照は検査しない。
+ORACLE_CONTROLS = {"reference.py", "broken_reverse.py", "broken_dedup.py", "broken_truncate.py"}
+
+
+def find_builtin_sort(path: Path):
+    """候補ソースが組み込みの sorted / .sort を使っていたら、その箇所の一覧を返す。
+
+    tokenize ベースなのでコメント・文字列内の言及は無視する。
+    候補が自分で定義する sort() の再帰呼び出し（ドットなしの sort(...)）は違反にしない。
+    別名代入（s = sorted 等）によるすり抜けを防ぐため、呼び出しに限らず名前の参照自体を検出する。
+    """
+    src = path.read_text(encoding="utf-8")
+    toks = [t for t in tokenize.generate_tokens(io.StringIO(src).readline)
+            if t.type not in (tokenize.NL, tokenize.NEWLINE, tokenize.COMMENT,
+                              tokenize.INDENT, tokenize.DEDENT)]
+    hits = []
+    for i, t in enumerate(toks):
+        if t.type != tokenize.NAME:
+            continue
+        if t.string == "sorted":
+            hits.append(f"{t.start[0]}行目: sorted")
+        elif (t.string == "sort" and i > 0
+              and toks[i - 1].type == tokenize.OP and toks[i - 1].string == "."):
+            hits.append(f"{t.start[0]}行目: .sort")
+    return hits
 
 
 def load_sort(path: Path):
@@ -53,6 +87,12 @@ def gen_inputs(seed=0, n=200):
     for _ in range(n):
         k = rnd.randint(0, 20)
         xs.append([rnd.randint(-5, 5) for _ in range(k)])  # 値域を狭め重複を多発させる
+    # 長い列・広い値域のケース（長さ最大20・値域[-5,5]だけでは出ないバグを狙う）。
+    # rnd は種固定なので、ここも毎回同じ列が決定的に生成される。
+    for _ in range(3):
+        xs.append([rnd.randint(-10**6, 10**6) for _ in range(100)])
+    for _ in range(2):
+        xs.append([rnd.randint(-10**6, 10**6) for _ in range(1000)])
     return xs
 
 
@@ -113,6 +153,14 @@ def evaluate(sort, inputs):
 
 
 def grade(path: Path, inputs):
+    if path.name not in ORACLE_CONTROLS:
+        try:
+            hits = find_builtin_sort(path)
+        except Exception:
+            hits = []  # 読めない・構文エラー等は下の load_sort が「読込失敗」として報告する
+        if hits:
+            detail = "制約違反（組み込みソート使用）: " + ", ".join(hits)
+            return [(name, "FAIL", detail) for name, _ in MRS], False
     try:
         sort = load_sort(path)
     except Exception as e:
@@ -163,14 +211,15 @@ def selftest():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--candidate", default="reference",
-                    help="採点する候補ファイル名（拡張子なし）。既定=reference")
+                    help="採点する候補ファイル名（.py は付けても付けなくてもよい）。既定=reference")
     ap.add_argument("--selftest", action="store_true", help="オラクル自身を検証")
     a = ap.parse_args()
     if a.selftest:
         sys.exit(0 if selftest() else 1)
     inputs = gen_inputs()
-    rows, allpass = grade(CASES / f"{a.candidate}.py", inputs)
-    ok = print_table(rows, f"採点: {a.candidate}.py（メタモルフィック）")
+    name = a.candidate[:-3] if a.candidate.endswith(".py") else a.candidate
+    rows, allpass = grade(CASES / f"{name}.py", inputs)
+    ok = print_table(rows, f"採点: {name}.py（メタモルフィック）")
     sys.exit(0 if ok else 1)
 
 

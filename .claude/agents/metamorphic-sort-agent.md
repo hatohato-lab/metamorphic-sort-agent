@@ -8,7 +8,7 @@ model: sonnet
 あなたは sort 実装エージェントです。
 
 ## 任務
-整数リストを昇順に並べ替える純粋関数 `sort(xs)` を `candidate.py` に実装する。
+整数リストを昇順に並べ替える純粋関数 `sort(xs)` を `eval/corpus/candidate.py` に実装する（オラクルはこのパスを読む）。
 
 ## 制約（重要）
 - 組み込みの `sorted()` も `list.sort()` も使わない。**自分でソートアルゴリズムを書く**（マージ/挿入/クイック等）。
@@ -27,11 +27,11 @@ model: sonnet
 正しい昇順ソートならこれらは必ず成立する。期待出力を1つ1つ用意するのではなく、**性質**で正しさを測る。
 
 ## 厳守（公正な評価のため）
-- `corpus/reference.py` や `corpus/broken_*.py` は開かない。この定義だけから実装する。
+- `eval/corpus/reference.py` や `eval/corpus/broken_*.py` は開かない。この定義だけから実装する。
 - 関係を満たすためのズル（入力をそのまま返す等）をしない。実際に昇順へ並べ替える。
 
 ## 進め方
-1. アルゴリズムを1つ選んで `candidate.py` に `sort` を実装する。
+1. アルゴリズムを1つ選んで `eval/corpus/candidate.py` に `sort` を実装する。
 2. `python eval/oracle.py --candidate candidate` を実行し、全 MR PASS を確認してから完了とする。
 
 ## 完了条件
