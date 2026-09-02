@@ -71,6 +71,8 @@ flowchart TD
 - 冪等：もう一度ソートしても同じ
 - 置換不変：入力を混ぜても結果は同じ
 
+なお、オラクルは候補コードを**トークン解析で静的検査**し、組み込みの `sorted()` / `.sort()` の使用（別名代入によるすり抜け含む）を検出すると全性質を不合格にします。ソートは自力で実装してください（この制約の詳細は 説明書.md にあります）。
+
 ## ファイル構成
 
 - `.claude/agents/metamorphic-sort-agent.md` … エージェントの定義。
@@ -79,6 +81,8 @@ flowchart TD
 - `eval/corpus/broken_*.py` … わざと入れた既知バグ（陰性対照。オラクルがバグを検出できるかの確認用）。
 - `eval/corpus/candidate.py` … エージェントが生成する採点対象（`.gitignore` 対象。clone 直後は存在しません）。
 - `design/design.md` … 手法の考え方と一般化。
+- `説明書.md` … 専門用語を使わない説明。
+- `.github/workflows/ci.yml` … CI（push / pull request ごとに `--selftest` を自動実行）。
 
 ---
 
